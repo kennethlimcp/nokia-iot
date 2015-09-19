@@ -1,0 +1,46 @@
+<channel>
+	<title>PM2.5 Update</title>
+	<source>Airviro</source>
+<item>
+	<region>
+		<id>rNO</id>
+		<latitude>1.41803</latitude>
+		<longitude>103.82000</longitude>
+		<record timestamp="20150919220000">
+			<reading type="PM25_RGN_1HR" value="42"/>
+		</record>
+	</region>
+	<region>
+		<id>rCE</id>
+		<latitude>1.35735</latitude>
+		<longitude>103.82000</longitude>
+		<record timestamp="20150919220000">
+			<reading type="PM25_RGN_1HR" value="43"/>
+		</record>
+	</region>
+	<region>
+		<id>rEA</id>
+		<latitude>1.35735</latitude>
+		<longitude>103.94000</longitude>
+		<record timestamp="20150919220000">
+			<reading type="PM25_RGN_1HR" value="52"/>
+		</record>
+	</region>
+	<region>
+		<id>rWE</id>
+		<latitude>1.35735</latitude>
+		<longitude>103.70000</longitude>
+		<record timestamp="20150919220000">
+			<reading type="PM25_RGN_1HR" value="52"/>
+		</record>
+	</region>
+	<region>
+		<id>rSO</id>
+		<latitude>1.29587</latitude>
+		<longitude>103.82000</longitude>
+		<record timestamp="20150919220000">
+			<reading type="PM25_RGN_1HR" value="57"/>
+		</record>
+	</region>
+	</item>
+</channel>

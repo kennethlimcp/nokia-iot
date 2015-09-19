@@ -15,3 +15,8 @@ The screen is initialized upon bootup while Wifi connection is established. Wifi
 
 - [Photon (actually usually a Spark core but..)](https://store.particle.io/?product=particle-photon)
 - [Nokia LCD](https://www.sparkfun.com/products/10168)
+
+### Resources
+
+- [PSI dataset](https://www.nea.gov.sg/api)
+- [Web Interface by @suda](suda.github.io/particle-web-interface)

@@ -2,25 +2,25 @@
  7-17-2011
  Spark Fun Electronics 2011
  Nathan Seidle
- 
+
  This code is public domain but you buy me a beer if you use this and we meet someday (Beerware license).
- 
+
  This code writes a series of images and text to the Nokia 5110 84x48 graphic LCD:
  http://www.sparkfun.com/products/10168
- 
- Do not drive the backlight with 5V. It will smoke. However, the backlight on the LCD seems to be 
+
+ Do not drive the backlight with 5V. It will smoke. However, the backlight on the LCD seems to be
  happy with direct drive from the 3.3V regulator.
- Although the PCD8544 controller datasheet recommends 3.3V, the graphic Nokia 5110 LCD can run at 3.3V or 5V. 
+ Although the PCD8544 controller datasheet recommends 3.3V, the graphic Nokia 5110 LCD can run at 3.3V or 5V.
  No resistors needed on the signal lines.
- 
+
  You will need 5 signal lines to connect to the LCD, 3.3 or 5V for power, 3.3V for LED backlight, and 1 for ground.
- 
+
  Updated by kennethlimcp
  September 2015
  Extending to use a Particle device as the MCU
  */
 
-    
+
 SYSTEM_MODE(SEMI_AUTOMATIC);
 
 #define PIN_POWER A7 //Pin 1 on LCD
@@ -32,7 +32,7 @@ SYSTEM_MODE(SEMI_AUTOMATIC);
 #define PIN_LED   A6 //Pin 8 on LCD
 
 //The DC pin tells the LCD if we are sending a command or data
-#define LCD_COMMAND 0 
+#define LCD_COMMAND 0
 #define LCD_DATA  1
 
 //You may find a different size screen, but this one is 84 by 48 pixels
@@ -44,7 +44,7 @@ SYSTEM_MODE(SEMI_AUTOMATIC);
 static const byte ASCII[][5] = {
   // First 32 characters (0x00-0x19) are ignored. These are
   // non-displayable, control characters.
-   {0x00, 0x00, 0x00, 0x00, 0x00} // 0x20  
+   {0x00, 0x00, 0x00, 0x00, 0x00} // 0x20
   ,{0x00, 0x00, 0x5f, 0x00, 0x00} // 0x21 !
   ,{0x00, 0x07, 0x00, 0x07, 0x00} // 0x22 "
   ,{0x14, 0x7f, 0x14, 0x7f, 0x14} // 0x23 #
@@ -118,7 +118,7 @@ static const byte ASCII[][5] = {
   ,{0x0c, 0x52, 0x52, 0x52, 0x3e} // 0x67 g
   ,{0x7f, 0x08, 0x04, 0x04, 0x78} // 0x68 h
   ,{0x00, 0x44, 0x7d, 0x40, 0x00} // 0x69 i
-  ,{0x20, 0x40, 0x44, 0x3d, 0x00} // 0x6a j 
+  ,{0x20, 0x40, 0x44, 0x3d, 0x00} // 0x6a j
   ,{0x7f, 0x10, 0x28, 0x44, 0x00} // 0x6b k
   ,{0x00, 0x41, 0x7f, 0x40, 0x00} // 0x6c l
   ,{0x7c, 0x04, 0x18, 0x04, 0x78} // 0x6d m
@@ -174,11 +174,12 @@ char xkcdSandwich[504] = {
 0xEF, 0xBB, 0x83, 0x86, 0x88, 0xB0, 0x80, 0x80, 0x80, 0x8F, 0x90, 0x90, 0x90, 0x9F, 0x8F, 0x80,
 0x9F, 0x9F, 0x87, 0x8D, 0x98, 0x80, 0x8C, 0x9E, 0x92, 0x92, 0x9F, 0xC0, 0xC7, 0xFF, 0xB8, 0x8F,
 0x80, 0x90, 0x90, 0xC0, 0xF0, 0x8E, 0x81, 0x80, 0x81, 0x8F, 0xB8, 0xE0, 0x80, 0x80, 0x80, 0x80,
-0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0xFF, 
+0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0xFF,
 };
 
 uint8_t retry_count = 0;
 unsigned long old_time = millis();
+unsigned long check_PSI = millis();
 
 char display_msg[72];
 
@@ -189,15 +190,18 @@ uint8_t led_brightness = 0;
 
 void setup(void) {
     WiFi.on();
-    
+
     Spark.function("msg",message);
     Spark.function("led",ledBrightness);
-    
+
     //For debugging
-    Serial.begin(9600);
-    
+    Serial.begin(115200);
+
+    // Lets listen for the hook response
+    Spark.subscribe("hook-response/SGpsi", gotPsiData, MY_DEVICES);
+
     //Init the LCD
-    LCDInit(); 
+    LCDInit();
     LCDClear();
     LCDBitmap(xkcdSandwich);
 }
@@ -223,7 +227,11 @@ void loop(void) {
         }
         old_time = millis();
     }
-    
+
+    // if(millis() - check_PSI >= 5000){
+    //     Spark.publish("psi_");
+    // }
+
     if(new_msg == TRUE){
         LCDClear();
         LCDString(display_msg);
@@ -284,6 +292,42 @@ int ledBrightness(String msg){
 }
 
 
+// This function will get called when PSI data comes in
+void gotPsiData(const char *name, const char *data) {
+    String str = String(data);
+    String idStr = tryExtractString(str, "<id>", "</id>");
+    String psiStr = tryExtractString(str, "<reading type=\"PM25_RGN_1HR\" value=\"", "\"/>");
+
+    if (idStr != NULL) {
+        Serial.println("ID: " + idStr);
+    }
+
+    if (psiStr != NULL) {
+        Serial.println("psi: " + psiStr);
+    }
+
+}
+
+// Returns any text found between a start and end string inside 'str'
+// example: startfooend  -> returns foo
+String tryExtractString(String str, const char* start, const char* end) {
+    if (str == NULL) {
+        return NULL;
+    }
+
+    int idx = str.indexOf(start);
+    if (idx < 0) {
+        return NULL;
+    }
+
+    int endIdx = str.indexOf(end);
+    if (endIdx < 0) {
+        return NULL;
+    }
+
+    return str.substring(idx + strlen(start), endIdx);
+}
+
 
 void gotoXY(int x, int y) {
   LCDWrite(0, 0x80 | x);  // Column.
@@ -320,7 +364,7 @@ void LCDString(char *characters) {
 void LCDClear(void) {
   for (int index = 0 ; index < (LCD_X * LCD_Y / 8) ; index++)
     LCDWrite(LCD_DATA, 0x00);
-    
+
   gotoXY(0, 0); //After we clear the display, return to the home position
 }
 
@@ -338,14 +382,14 @@ void LCDInit(void) {
     //Turn on LCD
     digitalWrite(PIN_POWER,HIGH);
     delay(100);
-      
+
     //Reset the LCD to a known state
     digitalWrite(PIN_RESET, LOW);
     digitalWrite(PIN_RESET, HIGH);
-  
+
     //Turn off LED by default
     digitalWrite(PIN_LED,LOW);
-  
+
 
 
   LCDWrite(LCD_COMMAND, 0x21); //Tell LCD that extended commands follow
@@ -358,7 +402,7 @@ void LCDInit(void) {
 }
 
 
-//There are two memory banks in the LCD, data/RAM and commands. This 
+//There are two memory banks in the LCD, data/RAM and commands. This
 //function sets the DC pin high or low depending, and then sends
 //the data byte
 void LCDWrite(byte data_or_command, char data) {
@@ -369,4 +413,3 @@ void LCDWrite(byte data_or_command, char data) {
   shiftOut(PIN_SDIN, PIN_SCLK, MSBFIRST, data);
   digitalWrite(PIN_SCE, HIGH);
 }
-
